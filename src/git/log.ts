@@ -13,6 +13,10 @@ export function isAIEmail(email: string): boolean {
   return AI_EMAIL_PATTERNS.some(pattern => pattern.test(email));
 }
 
+export function isBotEmail(email: string): boolean {
+  return /\[bot\]/i.test(email);
+}
+
 export function parseAgentInfo(name: string, email: string): { agentName: string; model?: string } | undefined {
   const lowerEmail = email.toLowerCase();
   const lowerName = name.toLowerCase();
