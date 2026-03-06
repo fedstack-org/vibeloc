@@ -68,7 +68,30 @@ export class AnalyzeCommand extends Command {
 
     const humanStats = Array.from(humanStatsMap.values()).sort((a, b) => b.lines - a.lines);
     const aiStats = Array.from(aiStatsMap.values()).sort((a, b) => b.lines - a.lines);
+
+    // Group AI stats by agent
+    const aiByAgent = new Map<string, {total: {commits: number, lines: number}, models: AIStatsWithAgent[]}>();
+    for (const stat of aiStats) {
+      const agentKey = stat.agentName || stat.email;
+      const existing = aiByAgent.get(agentKey) || {total: {commits: 0, lines: 0}, models: []};
+      existing.total.commits += stat.commits;
+      existing.total.lines += stat.lines;
+      existing.models.push(stat);
+      aiByAgent.set(agentKey, existing);
+    }
+
     const humanAiStats = Array.from(humanAiStatsMap.values()).sort((a, b) => b.lines - a.lines);
+
+    // Group Human+AI stats by human+agent
+    const humanAiByPair = new Map<string, {total: {commits: number, lines: number}, entries: HumanAIStats[]}>();
+    for (const stat of humanAiStats) {
+      const pairKey = `${stat.humanEmail}|${stat.aiAgentName || stat.aiEmail}`;
+      const existing = humanAiByPair.get(pairKey) || {total: {commits: 0, lines: 0}, entries: []};
+      existing.total.commits += stat.commits;
+      existing.total.lines += stat.lines;
+      existing.entries.push(stat);
+      humanAiByPair.set(pairKey, existing);
+    }
 
     const humanTable = new Table({
       head: ['Email', 'Commits', 'Lines'],
@@ -82,38 +105,39 @@ export class AnalyzeCommand extends Command {
     this.context.stdout.write(humanTable.toString());
     this.context.stdout.write(`\nTotal: ${humanStats.length} contributors, ${humanStats.reduce((s, x) => s + x.lines, 0)} lines\n\n`);
 
-    const aiTotalCommits = aiStats.reduce((s, x) => s + x.commits, 0);
-    const aiTotalLines = aiStats.reduce((s, x) => s + x.lines, 0);
-
     const aiTable = new Table({
       head: ['Agent', 'Model', 'Commits', 'Lines'],
       colWidths: [25, 25, 10, 12],
       style: { head: ['magenta'], border: ['grey'] },
     });
-    aiTable.push(['*', '*', aiTotalCommits, aiTotalLines]);
-    for (const stat of aiStats) {
-      const displayName = stat.agentName || stat.email;
-      aiTable.push([displayName, stat.model || '-', stat.commits, stat.lines]);
+    for (const [, group] of aiByAgent) {
+      aiTable.push(['*', '*', group.total.commits, group.total.lines]);
+      for (const stat of group.models) {
+        const displayName = stat.agentName || stat.email;
+        aiTable.push([displayName, stat.model || '-', stat.commits, stat.lines]);
+      }
     }
     this.context.stdout.write('=== AI ===\n');
     this.context.stdout.write(aiTable.toString());
-    this.context.stdout.write(`\nTotal: ${aiStats.length} AI contributors, ${aiTotalLines} lines\n\n`);
-
-    const humanAiTotalCommits = humanAiStats.reduce((s, x) => s + x.commits, 0);
-    const humanAiTotalLines = humanAiStats.reduce((s, x) => s + x.lines, 0);
+    const aiTotalLines = Array.from(aiByAgent.values()).reduce((s, g) => s + g.total.lines, 0);
+    this.context.stdout.write(`\nTotal: ${aiByAgent.size} AI contributors, ${aiTotalLines} lines\n\n`);
 
     const humanAiTable = new Table({
       head: ['Human Email', 'Agent', 'Model', 'Commits', 'Lines'],
       colWidths: [20, 20, 20, 8, 10],
       style: { head: ['green'], border: ['grey'] },
     });
-    humanAiTable.push(['*', '*', '*', humanAiTotalCommits, humanAiTotalLines]);
-    for (const stat of humanAiStats) {
-      const displayAgent = stat.aiAgentName || stat.aiEmail;
-      humanAiTable.push([stat.humanEmail, displayAgent, stat.aiModel || '-', stat.commits, stat.lines]);
+    for (const [pairKey, group] of humanAiByPair) {
+      const [humanEmail, agentName] = pairKey.split('|');
+      humanAiTable.push([humanEmail, agentName, '*', group.total.commits, group.total.lines]);
+      for (const stat of group.entries) {
+        const displayAgent = stat.aiAgentName || stat.aiEmail;
+        humanAiTable.push([stat.humanEmail, displayAgent, stat.aiModel || '-', stat.commits, stat.lines]);
+      }
     }
     this.context.stdout.write('=== Human + AI ===\n');
     this.context.stdout.write(humanAiTable.toString());
-    this.context.stdout.write(`\nTotal: ${humanAiStats.length} human+AI pairs, ${humanAiTotalLines} lines\n`);
+    const humanAiTotalLines = Array.from(humanAiByPair.values()).reduce((s, g) => s + g.total.lines, 0);
+    this.context.stdout.write(`\nTotal: ${humanAiByPair.size} human+AI pairs, ${humanAiTotalLines} lines\n`);
   }
 }
