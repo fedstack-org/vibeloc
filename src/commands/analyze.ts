@@ -113,7 +113,9 @@ export class AnalyzeCommand extends Command {
     for (const [agentName, group] of aiByAgent) {
       aiTable.push([agentName, '*', group.total.commits, group.total.lines]);
       for (const stat of group.models) {
-        aiTable.push(['', stat.model || '-', stat.commits, stat.lines]);
+        if (stat.model) {
+          aiTable.push(['', stat.model, stat.commits, stat.lines]);
+        }
       }
     }
     this.context.stdout.write('=== AI ===\n');
@@ -130,7 +132,9 @@ export class AnalyzeCommand extends Command {
       const [humanEmail, agentName] = pairKey.split('|');
       humanAiTable.push([humanEmail, agentName, '*', group.total.commits, group.total.lines]);
       for (const stat of group.entries) {
-        humanAiTable.push(['', '', stat.aiModel || '-', stat.commits, stat.lines]);
+        if (stat.aiModel) {
+          humanAiTable.push(['', '', stat.aiModel, stat.commits, stat.lines]);
+        }
       }
     }
     this.context.stdout.write('=== Human + AI ===\n');
