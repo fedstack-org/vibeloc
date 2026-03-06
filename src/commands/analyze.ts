@@ -10,7 +10,7 @@ interface AIStatsWithAgent extends ContributorStats {
 }
 
 export class AnalyzeCommand extends Command {
-  static paths = [[`analyze`], [``]];
+  static paths = [[]];
 
   repoPath = Option.String({required: false});
 
