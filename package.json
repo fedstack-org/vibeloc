@@ -1,6 +1,6 @@
 {
   "name": "vibeloc",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Human Lines of Code - Analyze git history to count human vs AI code contributions",
   "publishConfig": {
     "access": "public"
