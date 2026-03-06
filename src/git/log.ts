@@ -6,6 +6,7 @@ const AI_EMAIL_PATTERNS = [
   /factory-droid/i,
   /@anthropic\.com$/i,
   /copilot@users\.noreply\.github\.com$/i,
+  /google-labs-jules/i,
 ];
 
 export function isAIEmail(email: string): boolean {
@@ -28,6 +29,10 @@ export function parseAgentInfo(name: string, email: string): { agentName: string
 
   if (lowerName.includes('copilot') || lowerEmail.includes('copilot@users.noreply.github.com')) {
     return { agentName: 'GitHub Copilot' };
+  }
+
+  if (lowerName.includes('google-labs-jules') || lowerEmail.includes('google-labs-jules')) {
+    return { agentName: 'Jules' };
   }
 
   return undefined;
