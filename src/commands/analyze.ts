@@ -140,6 +140,38 @@ export class AnalyzeCommand extends Command {
     this.context.stdout.write('=== Human + AI ===\n');
     this.context.stdout.write(humanAiTable.toString());
     const humanAiTotalLines = Array.from(humanAiByPair.values()).reduce((s, g) => s + g.total.lines, 0);
-    this.context.stdout.write(`\nTotal: ${humanAiByPair.size} human+AI pairs, ${humanAiTotalLines} lines\n`);
+    this.context.stdout.write(`\nTotal: ${humanAiByPair.size} human+AI pairs, ${humanAiTotalLines} lines\n\n`);
+
+    // Vibe Rate
+    const totalHumanLines = humanStats.reduce((s, x) => s + x.lines, 0);
+    const totalAiLines = aiTotalLines;
+    const totalLines = totalHumanLines + totalAiLines;
+    const formatRate = (ai: number, total: number) => total === 0 ? '0.0%' : `${(ai / total * 100).toFixed(1)}%`;
+
+    // Per-human AI lines
+    const humanAiLinesByEmail = new Map<string, number>();
+    for (const stat of humanAiStats) {
+      const existing = humanAiLinesByEmail.get(stat.humanEmail) || 0;
+      humanAiLinesByEmail.set(stat.humanEmail, existing + stat.lines);
+    }
+
+    const vibeTable = new Table({
+      head: ['Email', 'Vibe Rate'],
+      colWidths: [45, 15],
+      style: { head: ['yellow'], border: ['grey'] },
+    });
+    vibeTable.push(['*', formatRate(totalAiLines, totalLines)]);
+    const allEmails = new Set([...humanStatsMap.keys(), ...humanAiLinesByEmail.keys()]);
+    const vibeEntries = Array.from(allEmails).map(email => {
+      const humanLines = humanStatsMap.get(email)?.lines || 0;
+      const aiLines = humanAiLinesByEmail.get(email) || 0;
+      return { email, rate: aiLines / (humanLines + aiLines || 1), formatted: formatRate(aiLines, humanLines + aiLines) };
+    }).sort((a, b) => b.rate - a.rate);
+    for (const entry of vibeEntries) {
+      vibeTable.push([entry.email, entry.formatted]);
+    }
+    this.context.stdout.write('=== Vibe Rate ===\n');
+    this.context.stdout.write(vibeTable.toString());
+    this.context.stdout.write('\n');
   }
 }
