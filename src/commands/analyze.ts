@@ -1,6 +1,6 @@
 import {Command, Option} from 'clipanion';
 import Table from 'cli-table3';
-import {getGitLog, isAIEmail} from '../git/log';
+import {getGitLog, isAIEmail, parseAgentInfo} from '../git/log';
 import {getDiffStats} from '../git/diff';
 import {ContributorStats, HumanAIStats} from '../types';
 
@@ -33,7 +33,16 @@ export class AnalyzeCommand extends Command {
       const humanEmail = commit.authorEmail;
 
       if (coAuthorAis.length === 0) {
-        if (!isAIEmail(humanEmail)) {
+        if (isAIEmail(humanEmail)) {
+          const agentInfo = parseAgentInfo(commit.authorName, humanEmail);
+          const aiKey = humanEmail;
+          const existingAi = aiStatsMap.get(aiKey) || {email: aiKey, commits: 0, lines: 0, agentName: agentInfo?.agentName, model: agentInfo?.model};
+          existingAi.commits += 1;
+          existingAi.lines += lines;
+          if (agentInfo?.agentName) existingAi.agentName = agentInfo.agentName;
+          if (agentInfo?.model) existingAi.model = agentInfo.model;
+          aiStatsMap.set(aiKey, existingAi);
+        } else {
           const key = humanEmail;
           const existing = humanStatsMap.get(key) || {email: key, commits: 0, lines: 0};
           existing.commits += 1;
