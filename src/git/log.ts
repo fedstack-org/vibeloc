@@ -3,7 +3,7 @@ import {Commit, CoAuthor} from '../types';
 
 const CO_AUTHOR_REGEX = /^co-authored-by:\s+(.+)\s+<(.+)>$/i;
 const AI_EMAIL_PATTERNS = [
-  /\[bot\]/i,
+  /factory-droid/i,
   /@anthropic\.com$/i,
   /copilot@users\.noreply\.github\.com$/i,
 ];
@@ -22,7 +22,7 @@ export function parseAgentInfo(name: string, email: string): { agentName: string
     return { agentName: 'Claude Code', model };
   }
 
-  if (lowerEmail.includes('factory-droid') || (lowerEmail.includes('[bot]') && !lowerName.includes('copilot'))) {
+  if (lowerEmail.includes('factory-droid') || lowerName.includes('factory-droid')) {
     return { agentName: 'Droid' };
   }
 
