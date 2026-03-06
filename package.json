@@ -1,0 +1,32 @@
+{
+  "name": "vibeloc",
+  "version": "1.0.1",
+  "description": "Human Lines of Code - Analyze git history to count human vs AI code contributions",
+  "publishConfig": {
+    "access": "public"
+  },
+  "main": "dist/index.js",
+  "bin": {
+    "vibeloc": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "tsc"
+  },
+  "keywords": [
+    "git",
+    "statistics",
+    "lines-of-code"
+  ],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "cli-table3": "^0.6.5",
+    "clipanion": "^4.0.0-rc.4"
+  },
+  "devDependencies": {
+    "@types/node": "^25.3.5",
+    "typescript": "^5.9.3"
+  }
+}
