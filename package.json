@@ -19,7 +19,7 @@
     "lines-of-code"
   ],
   "author": "",
-  "license": "ISC",
+  "license": "Apache-2.0",
   "type": "commonjs",
   "dependencies": {
     "cli-table3": "^0.6.5",
