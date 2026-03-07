@@ -35,7 +35,9 @@ export class AnalyzeCommand extends Command {
       if (coAuthorAis.length === 0) {
         if (isAIEmail(humanEmail)) {
           const agentInfo = parseAgentInfo(commit.authorName, humanEmail);
-          const aiKey = humanEmail;
+          const aiKey = agentInfo?.agentName && agentInfo?.model
+            ? `${agentInfo.agentName}|${agentInfo.model}`
+            : (agentInfo?.agentName || humanEmail);
           const existingAi = aiStatsMap.get(aiKey) || {email: aiKey, commits: 0, lines: 0, agentName: agentInfo?.agentName, model: agentInfo?.model};
           existingAi.commits += 1;
           existingAi.lines += lines;
@@ -51,7 +53,9 @@ export class AnalyzeCommand extends Command {
         }
       } else {
         for (const ai of coAuthorAis) {
-          const aiKey = ai.email;
+          const aiKey = ai.agentName && ai.model
+            ? `${ai.agentName}|${ai.model}`
+            : (ai.agentName || ai.email);
           const existingAi = aiStatsMap.get(aiKey) || {email: aiKey, commits: 0, lines: 0, agentName: ai.agentName, model: ai.model};
           existingAi.commits += 1;
           existingAi.lines += lines;
