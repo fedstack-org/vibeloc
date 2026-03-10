@@ -36,13 +36,18 @@ export class SnapshotCommand extends Command {
     const humanStatsMap = new Map<string, ContributorStats>();
     const aiStatsMap = new Map<string, AIStatsWithAgent>();
     const humanAiStatsMap = new Map<string, HumanAIStats>();
+    const botIgnoredMap = new Map<string, number>();
 
     for (const {commitHash} of allBlameLines) {
       const commit = commitMap.get(commitHash);
       if (!commit) continue;
 
       const kind = classifyLine(commit);
-      if (kind === 'bot' || kind === 'skip') continue;
+      if (kind === 'bot') {
+        botIgnoredMap.set(commit.authorEmail, (botIgnoredMap.get(commit.authorEmail) || 0) + 1);
+        continue;
+      }
+      if (kind === 'skip') continue;
 
       const coAuthorAis = commit.coAuthors.filter(ca => isAIEmail(ca.email));
       const authorEmail = commit.authorEmail;
@@ -172,7 +177,7 @@ export class SnapshotCommand extends Command {
     }
 
     const vibeTable = new Table({
-      head: ['Email', 'Vibe Rate'],
+      head: ['Email', 'Vibe Rate (Snapshot)'],
       colWidths: [45, 15],
       style: {head: ['yellow'], border: ['grey']},
     });
@@ -186,8 +191,15 @@ export class SnapshotCommand extends Command {
     for (const entry of vibeEntries) {
       vibeTable.push([entry.email, entry.formatted]);
     }
-    this.context.stdout.write('=== Vibe Rate ===\n');
+    this.context.stdout.write('=== Vibe Rate (Snapshot) ===\n');
     this.context.stdout.write(vibeTable.toString());
+    this.context.stdout.write('\n');
+
+    const botTotal = Array.from(botIgnoredMap.values()).reduce((s, x) => s + x, 0);
+    this.context.stdout.write(`Ignored lines:\n  Bot: ${botTotal}\n`);
+    for (const [email, count] of botIgnoredMap) {
+      this.context.stdout.write(`    ${email}: ${count}\n`);
+    }
     this.context.stdout.write('\n');
   }
 }

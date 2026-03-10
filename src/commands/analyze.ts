@@ -24,6 +24,7 @@ export class AnalyzeCommand extends Command {
     const humanStatsMap = new Map<string, ContributorStats>();
     const aiStatsMap = new Map<string, AIStatsWithAgent>();
     const humanAiStatsMap = new Map<string, HumanAIStats>();
+    const botIgnoredMap = new Map<string, number>();
 
     for (const commit of commits) {
       const diffStats = getDiffStats(repoPath, commit.hash);
@@ -44,7 +45,9 @@ export class AnalyzeCommand extends Command {
           if (agentInfo?.agentName) existingAi.agentName = agentInfo.agentName;
           if (agentInfo?.model) existingAi.model = agentInfo.model;
           aiStatsMap.set(aiKey, existingAi);
-        } else if (!isBotEmail(humanEmail)) {
+        } else if (isBotEmail(humanEmail)) {
+          botIgnoredMap.set(humanEmail, (botIgnoredMap.get(humanEmail) || 0) + lines);
+        } else {
           const key = humanEmail;
           const existing = humanStatsMap.get(key) || {email: key, commits: 0, lines: 0};
           existing.commits += 1;
@@ -169,7 +172,7 @@ export class AnalyzeCommand extends Command {
     }
 
     const vibeTable = new Table({
-      head: ['Email', 'Vibe Rate'],
+      head: ['Email', 'Vibe Rate (History)'],
       colWidths: [45, 15],
       style: { head: ['yellow'], border: ['grey'] },
     });
@@ -183,8 +186,15 @@ export class AnalyzeCommand extends Command {
     for (const entry of vibeEntries) {
       vibeTable.push([entry.email, entry.formatted]);
     }
-    this.context.stdout.write('=== Vibe Rate ===\n');
+    this.context.stdout.write('=== Vibe Rate (History) ===\n');
     this.context.stdout.write(vibeTable.toString());
+    this.context.stdout.write('\n');
+
+    const botTotal = Array.from(botIgnoredMap.values()).reduce((s, x) => s + x, 0);
+    this.context.stdout.write(`Ignored lines:\n  Bot: ${botTotal}\n`);
+    for (const [email, count] of botIgnoredMap) {
+      this.context.stdout.write(`    ${email}: ${count}\n`);
+    }
     this.context.stdout.write('\n');
   }
 }
