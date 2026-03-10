@@ -172,7 +172,7 @@ export class AnalyzeCommand extends Command {
     }
 
     const vibeTable = new Table({
-      head: ['Email', 'Vibe Rate (History)'],
+      head: ['Email', 'Vibe Rate'],
       colWidths: [45, 15],
       style: { head: ['yellow'], border: ['grey'] },
     });

@@ -177,7 +177,7 @@ export class SnapshotCommand extends Command {
     }
 
     const vibeTable = new Table({
-      head: ['Email', 'Vibe Rate (Snapshot)'],
+      head: ['Email', 'Vibe Rate'],
       colWidths: [45, 15],
       style: {head: ['yellow'], border: ['grey']},
     });
