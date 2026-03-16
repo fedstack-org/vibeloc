@@ -1,13 +1,9 @@
 import {Command, Option} from 'clipanion';
 import Table from 'cli-table3';
-import {getGitLog, isAIEmail, isBotEmail, parseAgentInfo} from '../git/log';
+import {getGitLog} from '../git/log';
 import {getDiffStats} from '../git/diff';
-import {ContributorStats, HumanAIStats} from '../types';
-
-interface AIStatsWithAgent extends ContributorStats {
-  agentName?: string;
-  model?: string;
-}
+import {HumanAIStats} from '../types';
+import {collectContributionStats, AIStatsWithAgent} from '../stats';
 
 export class AnalyzeCommand extends Command {
   static paths = [[]];
@@ -20,70 +16,19 @@ export class AnalyzeCommand extends Command {
     this.context.stdout.write(`Analyzing git history in: ${repoPath}\n\n`);
 
     const commits = getGitLog(repoPath);
+    const {
+      humanStatsMap,
+      aiStatsMap,
+      humanAiStatsMap,
+      humanHumanStatsMap,
+      botIgnoredMap,
+    } = collectContributionStats(commits.map(commit => ({
+      commit,
+      lines: getDiffStats(repoPath, commit.hash).total,
+    })));
 
-    const humanStatsMap = new Map<string, ContributorStats>();
-    const aiStatsMap = new Map<string, AIStatsWithAgent>();
-    const humanAiStatsMap = new Map<string, HumanAIStats>();
-    const botIgnoredMap = new Map<string, number>();
-
-    for (const commit of commits) {
-      const diffStats = getDiffStats(repoPath, commit.hash);
-      const lines = diffStats.total;
-
-      const coAuthorAis = commit.coAuthors.filter(ca => isAIEmail(ca.email));
-      const humanEmail = commit.authorEmail;
-
-      if (coAuthorAis.length === 0) {
-        if (isAIEmail(humanEmail)) {
-          const agentInfo = parseAgentInfo(commit.authorName, humanEmail);
-          const aiKey = agentInfo?.agentName && agentInfo?.model
-            ? `${agentInfo.agentName}|${agentInfo.model}`
-            : (agentInfo?.agentName || humanEmail);
-          const existingAi = aiStatsMap.get(aiKey) || {email: aiKey, commits: 0, lines: 0, agentName: agentInfo?.agentName, model: agentInfo?.model};
-          existingAi.commits += 1;
-          existingAi.lines += lines;
-          if (agentInfo?.agentName) existingAi.agentName = agentInfo.agentName;
-          if (agentInfo?.model) existingAi.model = agentInfo.model;
-          aiStatsMap.set(aiKey, existingAi);
-        } else if (isBotEmail(humanEmail)) {
-          botIgnoredMap.set(humanEmail, (botIgnoredMap.get(humanEmail) || 0) + lines);
-        } else {
-          const key = humanEmail;
-          const existing = humanStatsMap.get(key) || {email: key, commits: 0, lines: 0};
-          existing.commits += 1;
-          existing.lines += lines;
-          humanStatsMap.set(key, existing);
-        }
-      } else {
-        for (const ai of coAuthorAis) {
-          const aiKey = ai.agentName && ai.model
-            ? `${ai.agentName}|${ai.model}`
-            : (ai.agentName || ai.email);
-          const existingAi = aiStatsMap.get(aiKey) || {email: aiKey, commits: 0, lines: 0, agentName: ai.agentName, model: ai.model};
-          existingAi.commits += 1;
-          existingAi.lines += lines;
-          if (ai.agentName) existingAi.agentName = ai.agentName;
-          if (ai.model) existingAi.model = ai.model;
-          aiStatsMap.set(aiKey, existingAi);
-
-          const humanAiKey = `${humanEmail} + ${aiKey}`;
-          const existingHumanAi = humanAiStatsMap.get(humanAiKey) || {
-            humanEmail,
-            aiEmail: aiKey,
-            aiAgentName: ai.agentName,
-            aiModel: ai.model,
-            commits: 0,
-            lines: 0,
-          };
-          existingHumanAi.commits += 1;
-          existingHumanAi.lines += lines;
-          humanAiStatsMap.set(humanAiKey, existingHumanAi);
-        }
-      }
-    }
-
-    const humanStats = Array.from(humanStatsMap.values()).sort((a, b) => b.lines - a.lines);
-    const aiStats = Array.from(aiStatsMap.values()).sort((a, b) => b.lines - a.lines);
+    const humanStats = Array.from(humanStatsMap.values()).sort((left, right) => right.lines - left.lines || right.commits - left.commits || left.email.localeCompare(right.email));
+    const aiStats = Array.from(aiStatsMap.values()).sort((left, right) => right.lines - left.lines || right.commits - left.commits || left.email.localeCompare(right.email));
 
     // Group AI stats by agent
     const aiByAgent = new Map<string, {total: {commits: number, lines: number}, models: AIStatsWithAgent[]}>();
@@ -96,7 +41,8 @@ export class AnalyzeCommand extends Command {
       aiByAgent.set(agentKey, existing);
     }
 
-    const humanAiStats = Array.from(humanAiStatsMap.values()).sort((a, b) => b.lines - a.lines);
+    const humanAiStats = Array.from(humanAiStatsMap.values()).sort((left, right) => right.lines - left.lines || right.commits - left.commits || left.humanEmail.localeCompare(right.humanEmail) || (left.aiAgentName || left.aiEmail).localeCompare(right.aiAgentName || right.aiEmail));
+    const humanHumanStats = Array.from(humanHumanStatsMap.values()).sort((left, right) => right.lines - left.lines || right.commits - left.commits || left.humanAEmail.localeCompare(right.humanAEmail) || left.humanBEmail.localeCompare(right.humanBEmail));
 
     // Group Human+AI stats by human+agent
     const humanAiByPair = new Map<string, {total: {commits: number, lines: number}, entries: HumanAIStats[]}>();
@@ -117,7 +63,7 @@ export class AnalyzeCommand extends Command {
     for (const stat of humanStats) {
       humanTable.push([stat.email, stat.commits, stat.lines]);
     }
-    this.context.stdout.write('=== Human Only ===\n');
+    this.context.stdout.write('=== Human ===\n');
     this.context.stdout.write(humanTable.toString());
     this.context.stdout.write(`\nTotal: ${humanStats.length} contributors, ${humanStats.reduce((s, x) => s + x.lines, 0)} lines\n\n`);
 
@@ -158,11 +104,24 @@ export class AnalyzeCommand extends Command {
     const humanAiTotalLines = Array.from(humanAiByPair.values()).reduce((s, g) => s + g.total.lines, 0);
     this.context.stdout.write(`\nTotal: ${humanAiByPair.size} human+AI pairs, ${humanAiTotalLines} lines\n\n`);
 
-    // Vibe Rate
+    const humanHumanTable = new Table({
+      head: ['Human A', 'Human B', 'Commits', 'Lines'],
+      colWidths: [28, 28, 10, 12],
+      style: { head: ['blue'], border: ['grey'] },
+    });
+    for (const stat of humanHumanStats) {
+      humanHumanTable.push([stat.humanAEmail, stat.humanBEmail, stat.commits, stat.lines]);
+    }
+    this.context.stdout.write('=== Human + Human ===\n');
+    this.context.stdout.write(humanHumanTable.toString());
+    this.context.stdout.write(`\nTotal: ${humanHumanStats.length} human+human pairs, ${humanHumanStats.reduce((sum, stat) => sum + stat.lines, 0)} lines\n\n`);
+
     const totalHumanLines = humanStats.reduce((s, x) => s + x.lines, 0);
     const totalAiLines = aiTotalLines;
-    const totalLines = totalHumanLines + totalAiLines;
-    const formatRate = (ai: number, total: number) => total === 0 ? '0.0%' : `${(ai / total * 100).toFixed(1)}%`;
+    const formatRate = (ai: number, human: number) => {
+      if (human === 0) return ai === 0 ? '0.0%' : 'n/a';
+      return `${(ai / human * 100).toFixed(1)}%`;
+    };
 
     // Per-human AI lines
     const humanAiLinesByEmail = new Map<string, number>();
@@ -176,17 +135,21 @@ export class AnalyzeCommand extends Command {
       colWidths: [45, 15],
       style: { head: ['yellow'], border: ['grey'] },
     });
-    vibeTable.push(['*', formatRate(totalAiLines, totalLines)]);
+    vibeTable.push(['*', formatRate(totalAiLines, totalHumanLines)]);
     const allEmails = new Set([...humanStatsMap.keys(), ...humanAiLinesByEmail.keys()]);
     const vibeEntries = Array.from(allEmails).map(email => {
       const humanLines = humanStatsMap.get(email)?.lines || 0;
       const aiLines = humanAiLinesByEmail.get(email) || 0;
-      return { email, rate: aiLines / (humanLines + aiLines || 1), formatted: formatRate(aiLines, humanLines + aiLines) };
-    }).sort((a, b) => b.rate - a.rate);
+      return {
+        email,
+        rate: humanLines === 0 ? Number.POSITIVE_INFINITY : aiLines / humanLines,
+        formatted: formatRate(aiLines, humanLines),
+      };
+    }).sort((left, right) => right.rate - left.rate || left.email.localeCompare(right.email));
     for (const entry of vibeEntries) {
       vibeTable.push([entry.email, entry.formatted]);
     }
-    this.context.stdout.write('=== Vibe Rate (History) ===\n');
+    this.context.stdout.write('=== Vibe Rate (History, AI / Project Human LOC) ===\n');
     this.context.stdout.write(vibeTable.toString());
     this.context.stdout.write('\n');
 

@@ -29,3 +29,10 @@ export interface HumanAIStats {
   commits: number;
   lines: number;
 }
+
+export interface HumanHumanStats {
+  humanAEmail: string;
+  humanBEmail: string;
+  commits: number;
+  lines: number;
+}

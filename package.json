@@ -1,6 +1,6 @@
 {
   "name": "vibeloc",
-  "version": "1.0.10",
+  "version": "1.0.11",
   "description": "Human Lines of Code - Analyze git history to count human vs AI code contributions",
   "publishConfig": {
     "access": "public"
@@ -11,6 +11,7 @@
   },
   "scripts": {
     "build": "tsc",
+    "test": "npm run build && node --test test/*.test.js",
     "prepublishOnly": "tsc"
   },
   "keywords": [

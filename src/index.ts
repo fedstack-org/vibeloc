@@ -8,7 +8,7 @@ const [node, app, ...args] = process.argv
 const cli = new Cli({
   binaryLabel: `vibeloc`,
   binaryName: `${node} ${app}`,
-  binaryVersion: `1.0.0`
+  binaryVersion: `1.0.11`
 })
 
 cli.register(AnalyzeCommand)

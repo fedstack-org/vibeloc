@@ -3,6 +3,7 @@ import {Commit, CoAuthor} from '../types';
 
 const CO_AUTHOR_REGEX = /^co-authored-by:\s+(.+)\s+<(.+)>$/i;
 const AI_EMAIL_PATTERNS = [
+  /^codex@openai\.com$/i,
   /factory-droid/i,
   /@anthropic\.com$/i,
   /copilot@users\.noreply\.github\.com$/i,
@@ -20,6 +21,10 @@ export function isBotEmail(email: string): boolean {
 export function parseAgentInfo(name: string, email: string): { agentName: string; model?: string } | undefined {
   const lowerEmail = email.toLowerCase();
   const lowerName = name.toLowerCase();
+
+  if (lowerEmail === 'codex@openai.com' || lowerName === 'openai codex' || lowerName === 'codex') {
+    return { agentName: 'Codex' };
+  }
 
   if (lowerEmail.includes('anthropic.com') || lowerName.includes('claude')) {
     const modelMatch = name.match(/claude\s+(opus|sonnet|haiku|haiku-3\.5)?[\s\.]([\d\.]+)?/i);

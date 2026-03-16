@@ -10,7 +10,7 @@
 
 ## What is vibeloc?
 
-**vibeloc** (Vibe LOC) analyzes your git history to quantify how much of your codebase was written by humans versus AI assistants like Claude Code, GitHub Copilot, Droid, and more.
+**vibeloc** (Vibe LOC) analyzes your git history to quantify how much of your codebase was written by humans versus AI assistants like Codex, Claude Code, GitHub Copilot, Droid, and more.
 
 Perfect for:
 - 📊 **Metrics teams** tracking AI adoption
@@ -36,7 +36,7 @@ vibeloc /path/to/your/repo
 ```
 Analyzing git history in: /your/repo
 
-=== Human Only ===
+=== Human ===
 ┌─────────────────────────────────────────────┬──────────┬────────────┐
 │ Email                                       │ Commits  │ Lines      │
 ├─────────────────────────────────────────────┼──────────┼────────────┤
@@ -69,27 +69,41 @@ Total: 3 AI contributors, 48760 lines
 └────────────────────┴────────────────────┴────────────────────┴────────┴──────────┘
 Total: 1 human+AI pairs, 28450 lines
 
-=== Vibe Rate ===
+=== Human + Human ===
+┌────────────────────┬────────────────────┬──────────┬────────────┐
+│ Human A            │ Human B            │ Commits  │ Lines      │
+├────────────────────┼────────────────────┼──────────┼────────────┤
+│ john@example.com   │ jane@company.com   │ 16       │ 8900       │
+└────────────────────┴────────────────────┴──────────┴────────────┘
+Total: 1 human+human pairs, 8900 lines
+
+=== Vibe Rate (AI / Project Human LOC) ===
 ┌─────────────────────────────────────────────┬───────────────┐
 │ Email                                       │ Vibe Rate     │
 ├─────────────────────────────────────────────┼───────────────┤
-│ *                                           │ 34.9%         │
+│ *                                           │ 53.6%         │
 ├─────────────────────────────────────────────┼───────────────┤
-│ john@example.com                            │ 34.9%         │
+│ john@example.com                            │ 48.3%         │
+├─────────────────────────────────────────────┼───────────────┤
+│ jane@company.com                            │ 63.7%         │
 └─────────────────────────────────────────────┴───────────────┘
 ```
 
+Human-attributed LOC is split across the human participants in each commit. AI lines remain full assistant-attributed totals, so `Vibe Rate` can exceed `100%` in heavily assisted histories.
+
 ## Features
 
-- 🤖 **AI Agent Detection** — Recognizes Claude Code, GitHub Copilot, Factory Droid, Google Jules
+- 🤖 **AI Agent Detection** — Recognizes Codex, Claude Code, GitHub Copilot, Factory Droid, Google Jules
 - 📈 **Model-Level Stats** — Drill down into specific AI models (e.g., Claude Opus vs Sonnet)
 - 👥 **Human + AI Pairs** — See which humans work with which AI assistants
-- 📊 **Vibe Rate** — Calculate the percentage of AI-generated code per contributor
+- 🤝 **Human + Human Pairs** — Track human co-author collaboration from git footers
+- 📊 **Vibe Rate** — Calculate AI assistance as `AI lines / project human LOC`
 
 ## Supported AI Agents
 
 | Agent | Detection Method |
 |-------|------------------|
+| Codex | `codex@openai.com`, `OpenAI Codex`, `Codex` |
 | Claude Code | `@anthropic.com` emails, `claude` in name |
 | GitHub Copilot | `copilot@users.noreply.github.com` |
 | Factory Droid | `factory-droid` in email/name |

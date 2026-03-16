@@ -1,6 +1,6 @@
 import {execSync} from 'child_process';
 import {Commit, CoAuthor} from '../types';
-import {isAIEmail, isBotEmail, parseAgentInfo} from './log';
+import {parseAgentInfo} from './log';
 
 const CO_AUTHOR_REGEX = /^co-authored-by:\s+(.+)\s+<(.+)>$/i;
 
@@ -195,20 +195,4 @@ function parseBlameCommitsFallback(repoPath: string, hashes: Set<string>): Map<s
     }
   }
   return result;
-}
-
-export function classifyLine(commit: Commit): 'human' | 'ai' | 'human+ai' | 'bot' | 'skip' {
-  const coAuthorAis = commit.coAuthors.filter(ca => isAIEmail(ca.email));
-  const authorEmail = commit.authorEmail;
-
-  if (coAuthorAis.length > 0) {
-    return 'human+ai';
-  }
-  if (isAIEmail(authorEmail)) {
-    return 'ai';
-  }
-  if (isBotEmail(authorEmail)) {
-    return 'bot';
-  }
-  return 'human';
 }
