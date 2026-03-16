@@ -50,7 +50,7 @@ export function parseAgentInfo(name: string, email: string): { agentName: string
 export function getGitLog(repoPath: string): Commit[] {
   const gitDir = repoPath === '.' ? '' : `-C ${repoPath}`;
   const output = execSync(
-    `git ${gitDir} log --all --no-merges --format=format:"%H%n%an%n%ae%n%cn%n%ce%n%B%x00"`,
+    `git ${gitDir} log HEAD --no-merges --format=format:"%H%n%an%n%ae%n%cn%n%ce%n%B%x00"`,
     {encoding: 'utf-8', maxBuffer: 100 * 1024 * 1024}
   );
 

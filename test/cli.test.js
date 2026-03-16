@@ -77,6 +77,34 @@ test('analyze and snapshot attribute Codex and human co-authors correctly', () =
   assert.ok(!snapshotOutput.has('Human + Human'));
 });
 
+test('analyze only includes commits reachable from HEAD', () => {
+  const repoPath = fs.mkdtempSync(path.join(os.tmpdir(), 'vibeloc-head-only-'));
+
+  initRepo(repoPath);
+  commitFile(repoPath, {
+    filename: 'main.txt',
+    lineCount: 2,
+    message: 'feat: add mainline file',
+  });
+
+  runGit(repoPath, ['checkout', '-b', 'side-branch']);
+  commitFile(repoPath, {
+    filename: 'side.txt',
+    lineCount: 7,
+    message: 'feat: add side branch codex file',
+    coAuthors: [
+      {name: 'OpenAI Codex', email: 'codex@openai.com'},
+    ],
+  });
+
+  runGit(repoPath, ['checkout', 'main']);
+
+  const analyzeOutput = parseTables(runCli([repoPath]));
+  assert.deepEqual(findRow(analyzeOutput, 'Human', row => row[0] === 'alice@example.com'), ['alice@example.com', '1', '2']);
+  assert.ok(!findOptionalRow(analyzeOutput, 'AI', row => row[0] === 'Codex'));
+  assert.deepEqual(findRow(analyzeOutput, 'Vibe Rate (History, AI / Project Human LOC)', row => row[0] === '*'), ['*', '0.0%']);
+});
+
 function initRepo(repoPath) {
   runGit(repoPath, ['init', '-b', 'main']);
   runGit(repoPath, ['config', 'user.name', 'Alice Example']);
@@ -152,6 +180,11 @@ function findRow(sections, sectionName, predicate) {
   const row = rows.find(candidate => !isHeaderRow(candidate) && predicate(candidate));
   assert.ok(row, `Missing row in section "${sectionName}"`);
   return row;
+}
+
+function findOptionalRow(sections, sectionName, predicate) {
+  const rows = sections.get(sectionName) || [];
+  return rows.find(candidate => !isHeaderRow(candidate) && predicate(candidate));
 }
 
 function isHeaderRow(cells) {
