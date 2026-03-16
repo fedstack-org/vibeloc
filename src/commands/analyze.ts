@@ -20,7 +20,6 @@ export class AnalyzeCommand extends Command {
       humanStatsMap,
       aiStatsMap,
       humanAiStatsMap,
-      humanHumanStatsMap,
       botIgnoredMap,
     } = collectContributionStats(commits.map(commit => ({
       commit,
@@ -42,7 +41,6 @@ export class AnalyzeCommand extends Command {
     }
 
     const humanAiStats = Array.from(humanAiStatsMap.values()).sort((left, right) => right.lines - left.lines || right.commits - left.commits || left.humanEmail.localeCompare(right.humanEmail) || (left.aiAgentName || left.aiEmail).localeCompare(right.aiAgentName || right.aiEmail));
-    const humanHumanStats = Array.from(humanHumanStatsMap.values()).sort((left, right) => right.lines - left.lines || right.commits - left.commits || left.humanAEmail.localeCompare(right.humanAEmail) || left.humanBEmail.localeCompare(right.humanBEmail));
 
     // Group Human+AI stats by human+agent
     const humanAiByPair = new Map<string, {total: {commits: number, lines: number}, entries: HumanAIStats[]}>();
@@ -103,18 +101,6 @@ export class AnalyzeCommand extends Command {
     this.context.stdout.write(humanAiTable.toString());
     const humanAiTotalLines = Array.from(humanAiByPair.values()).reduce((s, g) => s + g.total.lines, 0);
     this.context.stdout.write(`\nTotal: ${humanAiByPair.size} human+AI pairs, ${humanAiTotalLines} lines\n\n`);
-
-    const humanHumanTable = new Table({
-      head: ['Human A', 'Human B', 'Commits', 'Lines'],
-      colWidths: [28, 28, 10, 12],
-      style: { head: ['blue'], border: ['grey'] },
-    });
-    for (const stat of humanHumanStats) {
-      humanHumanTable.push([stat.humanAEmail, stat.humanBEmail, stat.commits, stat.lines]);
-    }
-    this.context.stdout.write('=== Human + Human ===\n');
-    this.context.stdout.write(humanHumanTable.toString());
-    this.context.stdout.write(`\nTotal: ${humanHumanStats.length} human+human pairs, ${humanHumanStats.reduce((sum, stat) => sum + stat.lines, 0)} lines\n\n`);
 
     const totalHumanLines = humanStats.reduce((s, x) => s + x.lines, 0);
     const totalAiLines = aiTotalLines;

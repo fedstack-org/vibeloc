@@ -30,22 +30,6 @@ export function getAIKey(participant: Pick<CommitParticipant, 'email' | 'agentNa
   return participant.agentName || participant.email;
 }
 
-export function getHumanPairKey(leftEmail: string, rightEmail: string): string {
-  return [leftEmail, rightEmail].sort().join('|');
-}
-
-export function getHumanPairs(participants: CommitParticipant[]): Array<[CommitParticipant, CommitParticipant]> {
-  const pairs: Array<[CommitParticipant, CommitParticipant]> = [];
-
-  for (let leftIndex = 0; leftIndex < participants.length; leftIndex += 1) {
-    for (let rightIndex = leftIndex + 1; rightIndex < participants.length; rightIndex += 1) {
-      pairs.push([participants[leftIndex], participants[rightIndex]]);
-    }
-  }
-
-  return pairs;
-}
-
 export function getCommitAttribution(commit: Commit, totalLines: number): CommitAttribution {
   const rawParticipants = [
     {name: commit.authorName, email: commit.authorEmail},

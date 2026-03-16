@@ -63,18 +63,18 @@ test('analyze and snapshot attribute Codex and human co-authors correctly', () =
   assert.deepEqual(findRow(analyzeOutput, 'Human + AI', row => row[0] === 'alice@example.com' && row[1] === 'Codex'), ['alice@example.com', 'Codex', '*', '2', '5']);
   assert.deepEqual(findRow(analyzeOutput, 'Human + AI', row => row[0] === 'bob@example.com' && row[1] === 'Codex'), ['bob@example.com', 'Codex', '*', '1', '1']);
   assert.deepEqual(findRow(analyzeOutput, 'Human + AI', row => row[0] === 'bob@example.com' && row[1] === 'Claude Code'), ['bob@example.com', 'Claude Code', '*', '1', '3']);
-  assert.deepEqual(findRow(analyzeOutput, 'Human + Human', row => row[0] === 'alice@example.com' && row[1] === 'bob@example.com'), ['alice@example.com', 'bob@example.com', '3', '9']);
   assert.deepEqual(findRow(analyzeOutput, 'Vibe Rate (History, AI / Project Human LOC)', row => row[0] === '*'), ['*', '53.3%']);
   assert.deepEqual(findRow(analyzeOutput, 'Vibe Rate (History, AI / Project Human LOC)', row => row[0] === 'alice@example.com'), ['alice@example.com', '66.7%']);
   assert.deepEqual(findRow(analyzeOutput, 'Vibe Rate (History, AI / Project Human LOC)', row => row[0] === 'bob@example.com'), ['bob@example.com', '133.3%']);
+  assert.ok(!analyzeOutput.has('Human + Human'));
 
   const snapshotOutput = parseTables(runCli(['snapshot', repoPath]));
   assert.deepEqual(findRow(snapshotOutput, 'Human', row => row[0] === 'alice@example.com'), ['alice@example.com', '12']);
   assert.deepEqual(findRow(snapshotOutput, 'Human', row => row[0] === 'bob@example.com'), ['bob@example.com', '3']);
   assert.deepEqual(findRow(snapshotOutput, 'AI', row => row[0] === 'Codex'), ['Codex', '*', '5']);
   assert.deepEqual(findRow(snapshotOutput, 'Human + AI', row => row[0] === 'alice@example.com' && row[1] === 'Codex'), ['alice@example.com', 'Codex', '*', '5']);
-  assert.deepEqual(findRow(snapshotOutput, 'Human + Human', row => row[0] === 'alice@example.com' && row[1] === 'bob@example.com'), ['alice@example.com', 'bob@example.com', '9']);
   assert.deepEqual(findRow(snapshotOutput, 'Vibe Rate (Snapshot, AI / Project Human LOC)', row => row[0] === '*'), ['*', '53.3%']);
+  assert.ok(!snapshotOutput.has('Human + Human'));
 });
 
 function initRepo(repoPath) {
@@ -155,5 +155,5 @@ function findRow(sections, sectionName, predicate) {
 }
 
 function isHeaderRow(cells) {
-  return ['Email', 'Agent', 'Human Email', 'Human A', 'Vibe Rate'].includes(cells[0]);
+  return ['Email', 'Agent', 'Human Email', 'Vibe Rate'].includes(cells[0]);
 }

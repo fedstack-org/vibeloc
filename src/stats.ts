@@ -1,5 +1,5 @@
-import {Commit, ContributorStats, HumanAIStats, HumanHumanStats} from './types';
-import {getAIKey, getCommitAttribution, getHumanPairKey, getHumanPairs} from './attribution';
+import {Commit, ContributorStats, HumanAIStats} from './types';
+import {getAIKey, getCommitAttribution} from './attribution';
 
 export interface AIStatsWithAgent extends ContributorStats {
   agentName?: string;
@@ -15,7 +15,6 @@ export interface ContributionStats {
   humanStatsMap: Map<string, ContributorStats>;
   aiStatsMap: Map<string, AIStatsWithAgent>;
   humanAiStatsMap: Map<string, HumanAIStats>;
-  humanHumanStatsMap: Map<string, HumanHumanStats>;
   botIgnoredMap: Map<string, number>;
 }
 
@@ -23,7 +22,6 @@ export function collectContributionStats(contributions: Iterable<CommitContribut
   const humanStatsMap = new Map<string, ContributorStats>();
   const aiStatsMap = new Map<string, AIStatsWithAgent>();
   const humanAiStatsMap = new Map<string, HumanAIStats>();
-  const humanHumanStatsMap = new Map<string, HumanHumanStats>();
   const botIgnoredMap = new Map<string, number>();
 
   for (const {commit, lines} of contributions) {
@@ -73,26 +71,12 @@ export function collectContributionStats(contributions: Iterable<CommitContribut
       }
     }
 
-    for (const [leftHuman, rightHuman] of getHumanPairs(attribution.humans)) {
-      const pairKey = getHumanPairKey(leftHuman.email, rightHuman.email);
-      const [humanAEmail, humanBEmail] = pairKey.split('|');
-      const existingHumanHuman = humanHumanStatsMap.get(pairKey) || {
-        humanAEmail,
-        humanBEmail,
-        commits: 0,
-        lines: 0,
-      };
-      existingHumanHuman.commits += 1;
-      existingHumanHuman.lines += lines;
-      humanHumanStatsMap.set(pairKey, existingHumanHuman);
-    }
   }
 
   return {
     humanStatsMap,
     aiStatsMap,
     humanAiStatsMap,
-    humanHumanStatsMap,
     botIgnoredMap,
   };
 }

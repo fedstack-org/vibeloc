@@ -69,14 +69,6 @@ Total: 3 AI contributors, 48760 lines
 └────────────────────┴────────────────────┴────────────────────┴────────┴──────────┘
 Total: 1 human+AI pairs, 28450 lines
 
-=== Human + Human ===
-┌────────────────────┬────────────────────┬──────────┬────────────┐
-│ Human A            │ Human B            │ Commits  │ Lines      │
-├────────────────────┼────────────────────┼──────────┼────────────┤
-│ john@example.com   │ jane@company.com   │ 16       │ 8900       │
-└────────────────────┴────────────────────┴──────────┴────────────┘
-Total: 1 human+human pairs, 8900 lines
-
 === Vibe Rate (AI / Project Human LOC) ===
 ┌─────────────────────────────────────────────┬───────────────┐
 │ Email                                       │ Vibe Rate     │
@@ -96,7 +88,6 @@ Human-attributed LOC is split across the human participants in each commit. AI l
 - 🤖 **AI Agent Detection** — Recognizes Codex, Claude Code, GitHub Copilot, Factory Droid, Google Jules
 - 📈 **Model-Level Stats** — Drill down into specific AI models (e.g., Claude Opus vs Sonnet)
 - 👥 **Human + AI Pairs** — See which humans work with which AI assistants
-- 🤝 **Human + Human Pairs** — Track human co-author collaboration from git footers
 - 📊 **Vibe Rate** — Calculate AI assistance as `AI lines / project human LOC`
 
 ## Supported AI Agents
